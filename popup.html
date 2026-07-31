@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Keylet</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <!-- LIST VIEW -->
+  <div id="listView" class="view">
+    <div class="topbar">
+      <span class="title">Keylet</span>
+      <button id="addBtn" class="icon-btn" title="Add account">+</button>
+    </div>
+    <div id="accountList" class="account-list"></div>
+    <div id="emptyState" class="empty hidden">
+      <div class="empty-icon">🔐</div>
+      <div class="empty-text">No accounts yet.</div>
+      <button id="emptyAddBtn" class="link-btn">Add your first account</button>
+    </div>
+  </div>
+
+  <!-- FORM VIEW -->
+  <div id="formView" class="view hidden">
+    <div class="topbar">
+      <button id="backBtn" class="icon-btn" title="Back">‹</button>
+      <span class="title" id="formTitle">Add account</span>
+      <span class="spacer"></span>
+    </div>
+
+    <div class="form">
+      <label class="field">
+        <span class="field-label">otpauth:// URL</span>
+        <textarea id="otpauthInput" rows="3" placeholder="otpauth://totp/Issuer:user@example.com?secret=...&issuer=Issuer"></textarea>
+        <button id="parseBtn" class="ghost-btn">Parse</button>
+      </label>
+
+      <div class="or">— or fill manually —</div>
+
+      <label class="field">
+        <span class="field-label">Issuer</span>
+        <input id="issuerInput" type="text" placeholder="e.g. Google" />
+      </label>
+      <label class="field">
+        <span class="field-label">Label / Account</span>
+        <input id="labelInput" type="text" placeholder="e.g. user@example.com" />
+      </label>
+      <label class="field">
+        <span class="field-label">Secret (Base32)</span>
+        <input id="secretInput" type="text" placeholder="e.g. JBSWY3DPEHPK3PXP" autocomplete="off" spellcheck="false" />
+      </label>
+      <div class="row">
+        <label class="field half">
+          <span class="field-label">Digits</span>
+          <select id="digitsInput">
+            <option value="6">6</option>
+            <option value="8">8</option>
+          </select>
+        </label>
+        <label class="field half">
+          <span class="field-label">Period (s)</span>
+          <input id="periodInput" type="number" value="30" min="1" max="120" />
+        </label>
+      </div>
+
+      <div id="formError" class="error hidden"></div>
+
+      <button id="saveBtn" class="primary-btn">Save</button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

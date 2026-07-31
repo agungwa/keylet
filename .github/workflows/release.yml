@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. v1.0.0) — must match manifest.json"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify manifest version matches tag
+        run: |
+          MANIFEST_V=$(node -p "require('./manifest.json').version")
+          TAG_V="${{ steps.ver.outputs.tag }}"
+          TAG_V="${TAG_V#v}"  # strip leading 'v'
+          echo "manifest=$MANIFEST_V  tag=$TAG_V"
+          if [ "$MANIFEST_V" != "$TAG_V" ]; then
+            echo "::error::manifest.json version ($MANIFEST_V) does not match tag ($TAG_V)"
+            exit 1
+          fi
+
+      - name: Build extension zip
+        run: |
+          zip -r "keylet-${{ steps.ver.outputs.tag }}.zip" . \
+            -x "*.git*" \
+            -x "*.github*" \
+            -x "*.DS_Store" \
+            -x ".gitignore" \
+            -x "*.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: Keylet ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          files: keylet-${{ steps.ver.outputs.tag }}.zip

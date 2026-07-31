@@ -1,0 +1,26 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate manifest.json
+        run: node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('manifest.json is valid')"
+
+      - name: Check manifest version is set
+        run: |
+          node -e "const m=require('./manifest.json'); if(!m.version) throw new Error('missing version'); console.log('version', m.version)"
+
+      - name: Check required files exist
+        run: |
+          for f in manifest.json popup.html popup.css popup.js icons/icon16.png icons/icon32.png icons/icon48.png icons/icon128.png; do
+            [ -f "$f" ] || { echo "missing $f"; exit 1; }
+          done
+          echo "all required files present"
