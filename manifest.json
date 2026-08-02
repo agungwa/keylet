@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Keylet",
   "version": "1.0.0",
-  "description": "TOTP authenticator — add accounts via otpauth:// URL and view live codes",
+  "description": "TOTP authenticator — add accounts via otpauth:// URL or scan/import QR codes (incl. Google Authenticator export)",
   "permissions": ["storage"],
   "action": {
     "default_popup": "popup.html",

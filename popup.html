@@ -10,6 +10,7 @@
   <div id="listView" class="view">
     <div class="topbar">
       <span class="title">Keylet</span>
+      <button id="importBtn" class="icon-btn" title="Import from QR">⇪</button>
       <button id="addBtn" class="icon-btn" title="Add account">+</button>
     </div>
     <div id="accountList" class="account-list"></div>
@@ -68,6 +69,27 @@
       <button id="saveBtn" class="primary-btn">Save</button>
     </div>
   </div>
+
+  <!-- IMPORT VIEW -->
+  <div id="importView" class="view hidden">
+    <div class="topbar">
+      <button id="importBackBtn" class="icon-btn" title="Back">‹</button>
+      <span class="title">Import</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="form">
+      <button id="uploadBtn" class="primary-btn">Upload QR image</button>
+      <button id="scanBtn" class="ghost-btn">Scan with camera</button>
+      <input id="fileInput" type="file" accept="image/*" hidden />
+
+      <div id="importStatus" class="error hidden"></div>
+      <div id="importNote" class="note hidden"></div>
+      <div id="importPreview" class="import-preview"></div>
+      <button id="confirmImportBtn" class="primary-btn hidden"></button>
+    </div>
+  </div>
+
+  <script src="shared.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

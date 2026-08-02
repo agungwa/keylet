@@ -305,6 +305,52 @@ body {
   border-radius: 5px;
 }
 
+/* Import preview */
+.note {
+  font-size: 11px;
+  color: #f9e2af;
+  text-align: center;
+  padding: 6px 9px;
+  background: rgba(249, 226, 175, 0.08);
+  border-radius: 5px;
+}
+
+.import-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.preview-heading {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cdd6f4;
+  margin-bottom: 2px;
+}
+
+.preview-row {
+  padding: 6px 9px;
+  background: #181825;
+  border-radius: 6px;
+}
+
+.pr-issuer {
+  font-size: 12px;
+  font-weight: 600;
+  color: #89b4fa;
+}
+
+.pr-label {
+  font-size: 10px;
+  color: #7f849c;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

@@ -20,7 +20,12 @@ jobs:
 
       - name: Check required files exist
         run: |
-          for f in manifest.json popup.html popup.css popup.js icons/icon16.png icons/icon32.png icons/icon48.png icons/icon128.png; do
+          for f in manifest.json shared.js popup.html popup.css popup.js scan.html scan.css scan.js icons/icon16.png icons/icon32.png icons/icon48.png icons/icon128.png; do
             [ -f "$f" ] || { echo "missing $f"; exit 1; }
           done
           echo "all required files present"
+
+      - name: Syntax-check JS
+        run: |
+          for f in shared.js popup.js scan.js; do node --check "$f" || exit 1; done
+          echo "js ok"

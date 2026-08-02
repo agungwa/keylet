@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Keylet — Scan QR</title>
+  <link rel="stylesheet" href="popup.css" />
+  <link rel="stylesheet" href="scan.css" />
+</head>
+<body class="scan-body">
+  <div class="scan-wrap">
+    <h1>Scan QR code</h1>
+    <p class="scan-sub">Point your camera at a Google Authenticator export or 2FA setup QR.</p>
+
+    <div class="video-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="video-frame"></div>
+    </div>
+
+    <div id="scanStatus" class="status">Requesting camera…</div>
+
+    <div id="preview" class="import-preview hidden"></div>
+    <div id="scanNote" class="note hidden"></div>
+
+    <div class="scan-actions">
+      <button id="cancelBtn" class="ghost-btn">Cancel</button>
+      <button id="rescanBtn" class="ghost-btn hidden">Scan again</button>
+      <button id="confirmBtn" class="primary-btn hidden"></button>
+    </div>
+  </div>
+
+  <script src="shared.js"></script>
+  <script src="scan.js"></script>
+</body>
+</html>
