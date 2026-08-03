@@ -1,6 +1,6 @@
 {
   "name": "keylet",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "TOTP authenticator Chrome extension — otpauth://, QR import, Google Authenticator export support",
   "scripts": {
@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@types/chrome": "^0.0.287",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.25.0",
     "typescript": "^5.6.3"
   }
 }

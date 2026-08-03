@@ -1,11 +1,14 @@
-// Camera-scan entry point: opens in a tab, scans frames via BarcodeDetector,
-// previews found accounts, and saves them on confirm.
+// Camera-scan entry point. If the vault is configured but locked, prompt for
+// the master password before scanning. Saves imported accounts via the vault
+// (which encrypts them when configured, falls back to plaintext otherwise).
 
-import { addAccounts } from "../storage";
+import * as vault from "../vault";
 import { parseOtpUri } from "../otp-uri";
 import { requireEl } from "../dom";
 import type { NewAccount } from "../types";
 
+const lockView = requireEl("lockView");
+const scanWrap = requireEl("scanWrap");
 const video = requireEl<HTMLVideoElement>("video");
 const statusEl = requireEl("scanStatus");
 const previewEl = requireEl<HTMLDivElement>("preview");
@@ -13,6 +16,12 @@ const noteEl = requireEl("scanNote");
 const confirmBtn = requireEl<HTMLButtonElement>("confirmBtn");
 const rescanBtn = requireEl<HTMLButtonElement>("rescanBtn");
 const cancelBtn = requireEl<HTMLButtonElement>("cancelBtn");
+
+// Lock-view elements (scan.html)
+const lockPassword = requireEl<HTMLInputElement>("lockPassword");
+const lockError = requireEl("lockError");
+const lockSubmitBtn = requireEl<HTMLButtonElement>("lockSubmitBtn");
+const lockCancelBtn = requireEl<HTMLButtonElement>("lockCancelBtn");
 
 interface BarcodeDetectorLike {
   detect(source: CanvasImageSource): Promise<{ rawValue: string }[]>;
@@ -35,6 +44,20 @@ function setStatus(msg: string, kind?: "success"): void {
   statusEl.textContent = msg;
   statusEl.classList.remove("success");
   if (kind) statusEl.classList.add(kind);
+}
+
+function showLock(): void {
+  scanWrap.classList.add("hidden");
+  lockView.classList.remove("hidden");
+  lockPassword.value = "";
+  lockError.classList.add("hidden");
+  lockPassword.focus();
+}
+
+function showScan(): void {
+  lockView.classList.add("hidden");
+  scanWrap.classList.remove("hidden");
+  void startCamera();
 }
 
 async function startCamera(): Promise<void> {
@@ -142,9 +165,27 @@ function renderPreview(accs: NewAccount[], skippedHotp: number): void {
 }
 
 function setupHandlers(): void {
+  // Vault unlock
+  lockSubmitBtn.addEventListener("click", async () => {
+    const ok = await vault.unlock(lockPassword.value);
+    if (!ok) {
+      lockError.textContent = "Wrong password.";
+      lockError.classList.remove("hidden");
+      lockPassword.value = "";
+      lockPassword.focus();
+      return;
+    }
+    showScan();
+  });
+  lockPassword.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") lockSubmitBtn.click();
+  });
+  lockCancelBtn.addEventListener("click", () => window.close());
+
+  // Import confirm
   confirmBtn.addEventListener("click", async () => {
     confirmBtn.disabled = true;
-    const res = await addAccounts(pendingAccounts);
+    const res = await vault.addAccounts(pendingAccounts);
     setStatus(
       `Imported ${res.added} new account${res.added === 1 ? "" : "s"} (${res.total} total).`,
       "success",
@@ -176,4 +217,11 @@ function setupHandlers(): void {
 
 // ===== Init =====
 setupHandlers();
-void startCamera();
+
+(async function init(): Promise<void> {
+  if ((await vault.isConfigured()) && !(await vault.isUnlocked())) {
+    showLock();
+  } else {
+    showScan();
+  }
+})();

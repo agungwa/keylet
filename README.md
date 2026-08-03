@@ -4,12 +4,14 @@ A minimal, privacy-first TOTP (time-based one-time password) authenticator for G
 
 ## Features
 
+- **Master password + AES-GCM encryption at rest** — secrets never touch disk in plaintext; the derived key is cached only in `chrome.storage.session` (RAM, cleared on browser close)
 - Add accounts by pasting an `otpauth://totp/...` URL — fields auto-fill
 - Or enter issuer / label / secret manually
 - **Import from QR** — upload a screenshot/image of a QR code, or scan live with your camera
 - **Google Authenticator export support** — scan the `otpauth-migration://` QR codes that GA generates when exporting (multi-account batch import)
 - Live 6- or 8-digit codes with a countdown progress bar
 - One-click copy to clipboard
+- Lock-now button, change master password, and full reset
 - Multiple accounts supported
 - Everything stored locally via `chrome.storage.local` — no servers, no tracking
 - TOTP (RFC 6238) using Web Crypto HMAC-SHA1
@@ -58,8 +60,11 @@ Click **Parse**, then **Save**.
 .
 ├── src/                # TypeScript source
 │   ├── types.ts        # Shared types (Account, NewAccount, ParseResult)
-│   ├── storage.ts      # chrome.storage.local + dedupe-on-import
+│   ├── storage.ts      # Low-level raw I/O on chrome.storage.local
+│   ├── vault.ts        # Encryption orchestrator (setup/unlock/load/save)
+│   ├── crypto.ts       # PBKDF2 + AES-GCM + verifier primitives
 │   ├── base32.ts       # RFC 4648 base32 codec
+│   ├── base64.ts       # Base64 codec for crypto artifacts
 │   ├── totp.ts         # TOTP (RFC 6238) via Web Crypto
 │   ├── otpauth.ts      # Single otpauth:// parser
 │   ├── migration.ts    # Google Authenticator otpauth-migration:// protobuf decoder
@@ -67,7 +72,7 @@ Click **Parse**, then **Save**.
 │   ├── qr.ts           # BarcodeDetector wrapper for image QRs
 │   ├── dom.ts          # Small DOM helpers
 │   └── entries/
-│       ├── popup.ts    # Popup UI (list + add/edit + import)
+│       ├── popup.ts    # Popup UI (list + add/edit + import + settings)
 │       └── scan.ts     # Camera scan page (opened in a tab)
 ├── public/             # Copied verbatim into dist/ at build time
 │   ├── manifest.json
@@ -81,9 +86,15 @@ Click **Parse**, then **Save**.
 
 The extension is loaded from `dist/` (built from `src/` + `public/`).
 
-## Privacy
+## Privacy & security
 
-Secrets are stored only in `chrome.storage.local` on your machine. Keylet never makes network requests. If you remove the extension, the data is deleted with it.
+- **Secrets at rest** are AES-GCM-256 encrypted under a key derived from your master password (PBKDF2-SHA256, 600,000 iterations). Only salt + an encrypted verifier are stored on disk — never the password or the key.
+- **In-memory key caching**: after unlocking, the derived key lives in `chrome.storage.session`, which is RAM-only and cleared when Chrome closes. Click the 🔒 icon to drop it immediately.
+- **No network**: Keylet makes zero `fetch`/XHR/WebSocket calls. Verified by grep on every build.
+- **No recovery**: if you forget the master password, the only option is **Reset everything** (Settings → Danger zone), which wipes all accounts. There is no backdoor.
+- **Migration**: if you upgrade from a pre-vault version, the first time you set a master password all existing plaintext secrets are encrypted in place.
+
+Sources of risk that remain: anyone with access to your unlocked Chrome profile can read live codes while the popup is unlocked. For higher assurance, click 🔒 after copying a code.
 
 ## License
 

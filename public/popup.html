@@ -6,12 +6,31 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
+  <!-- LOCK VIEW (setup + unlock + change password share this markup) -->
+  <div id="lockView" class="view">
+    <div class="lock-card">
+      <div class="lock-icon" id="lockIcon">🔒</div>
+      <h2 id="lockTitle">Unlock Keylet</h2>
+      <p id="lockSubtitle" class="muted">Enter your master password</p>
+
+      <input id="lockPassword" type="password" placeholder="Master password" autocomplete="off" />
+      <input id="lockPasswordConfirm" type="password" placeholder="Confirm master password" autocomplete="off" class="hidden" />
+
+      <div id="lockError" class="error hidden"></div>
+
+      <button id="lockSubmitBtn" class="primary-btn">Unlock</button>
+      <button id="lockResetBtn" class="link-btn hidden">Forgot password? Reset everything</button>
+    </div>
+  </div>
+
   <!-- LIST VIEW -->
   <div id="listView" class="view">
     <div class="topbar">
       <span class="title">Keylet</span>
       <button id="importBtn" class="icon-btn" title="Import from QR">⇪</button>
       <button id="addBtn" class="icon-btn" title="Add account">+</button>
+      <button id="settingsBtn" class="icon-btn" title="Settings">⚙</button>
+      <button id="lockBtn" class="icon-btn" title="Lock now">🔒</button>
     </div>
     <div id="accountList" class="account-list"></div>
     <div id="emptyState" class="empty hidden">
@@ -86,6 +105,29 @@
       <div id="importNote" class="note hidden"></div>
       <div id="importPreview" class="import-preview"></div>
       <button id="confirmImportBtn" class="primary-btn hidden"></button>
+    </div>
+  </div>
+
+  <!-- SETTINGS VIEW -->
+  <div id="settingsView" class="view hidden">
+    <div class="topbar">
+      <button id="settingsBackBtn" class="icon-btn" title="Back">‹</button>
+      <span class="title">Settings</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="form">
+      <div class="settings-section">
+        <div class="settings-label">Change master password</div>
+        <input id="changeOldPw" type="password" placeholder="Current password" autocomplete="off" />
+        <input id="changeNewPw" type="password" placeholder="New password" autocomplete="off" />
+        <button id="changePwBtn" class="primary-btn">Update password</button>
+        <div id="changePwMsg" class="error hidden"></div>
+      </div>
+      <div class="settings-section danger">
+        <div class="settings-label">Danger zone</div>
+        <button id="settingsLockBtn" class="ghost-btn">Lock now</button>
+        <button id="settingsWipeBtn" class="ghost-btn">Reset everything (delete all data)</button>
+      </div>
     </div>
   </div>
 

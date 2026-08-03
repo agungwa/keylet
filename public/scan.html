@@ -7,7 +7,21 @@
   <link rel="stylesheet" href="scan.css" />
 </head>
 <body class="scan-body">
-  <div class="scan-wrap">
+  <!-- LOCK VIEW (shown when vault is configured but locked) -->
+  <div id="lockView" class="scan-lock hidden">
+    <div class="lock-card">
+      <div class="lock-icon">🔒</div>
+      <h2>Unlock Keylet</h2>
+      <p class="muted">Enter your master password to import scanned accounts.</p>
+      <input id="lockPassword" type="password" placeholder="Master password" autocomplete="off" />
+      <div id="lockError" class="error hidden"></div>
+      <button id="lockSubmitBtn" class="primary-btn">Unlock</button>
+      <button id="lockCancelBtn" class="ghost-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- SCAN VIEW -->
+  <div id="scanWrap" class="scan-wrap">
     <h1>Scan QR code</h1>
     <p class="scan-sub">Point your camera at a Google Authenticator export or 2FA setup QR.</p>
 

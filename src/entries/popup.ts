@@ -1,6 +1,6 @@
-// Popup entry point: list + add/edit form + import-from-QR view.
+// Popup entry point: vault-gated list + add/edit form + import-from-QR view.
 
-import { addAccounts, loadAccounts, saveAccounts, uid } from "../storage";
+import * as vault from "../vault";
 import { generateTotp } from "../totp";
 import { parseOtpauth } from "../otpauth";
 import { parseOtpUri } from "../otp-uri";
@@ -13,15 +13,78 @@ let accounts: Account[] = [];
 let editingId: string | null = null;
 let pendingImport: NewAccount[] = [];
 let ticker: ReturnType<typeof setInterval> | null = null;
+type LockMode = "setup" | "unlock";
+let lockMode: LockMode = "unlock";
 
 // ===== View elements =====
+const lockView = requireEl("lockView");
 const listView = requireEl("listView");
 const formView = requireEl("formView");
 const importView = requireEl("importView");
+const settingsView = requireEl("settingsView");
 const accountListEl = requireEl<HTMLDivElement>("accountList");
 const emptyState = requireEl<HTMLDivElement>("emptyState");
 
-// ===== View switching =====
+// Lock-view elements
+const lockIcon = requireEl("lockIcon");
+const lockTitle = requireEl<HTMLHeadingElement>("lockTitle");
+const lockSubtitle = requireEl("lockSubtitle");
+const lockPassword = requireEl<HTMLInputElement>("lockPassword");
+const lockPasswordConfirm = requireEl<HTMLInputElement>("lockPasswordConfirm");
+const lockError = requireEl("lockError");
+const lockSubmitBtn = requireEl<HTMLButtonElement>("lockSubmitBtn");
+const lockResetBtn = requireEl<HTMLButtonElement>("lockResetBtn");
+
+// ===== App view switching =====
+function hideAllAppViews(): void {
+  listView.classList.add("hidden");
+  formView.classList.add("hidden");
+  importView.classList.add("hidden");
+  settingsView.classList.add("hidden");
+}
+
+function showLock(): void {
+  hideAllAppViews();
+  stopTicker();
+  lockView.classList.remove("hidden");
+  lockPassword.value = "";
+  lockPasswordConfirm.value = "";
+  hideLockError();
+  lockPassword.focus();
+}
+
+function showLockForSetup(migratingCount: number): void {
+  lockMode = "setup";
+  lockIcon.textContent = "🔐";
+  lockTitle.textContent = "Set a master password";
+  lockSubtitle.textContent =
+    migratingCount > 0
+      ? `This encrypts your ${migratingCount} existing account${migratingCount === 1 ? "" : "s"}. There is no recovery — remember it.`
+      : "Your secrets will be encrypted on disk. There is no recovery — remember it.";
+  lockPasswordConfirm.classList.remove("hidden");
+  lockPassword.placeholder = "Master password";
+  lockSubmitBtn.textContent = "Set password";
+  lockResetBtn.classList.add("hidden");
+  showLock();
+}
+
+function showLockForUnlock(): void {
+  lockMode = "unlock";
+  lockIcon.textContent = "🔒";
+  lockTitle.textContent = "Unlock Keylet";
+  lockSubtitle.textContent = "Enter your master password";
+  lockPasswordConfirm.classList.add("hidden");
+  lockPassword.placeholder = "Master password";
+  lockSubmitBtn.textContent = "Unlock";
+  lockResetBtn.classList.remove("hidden");
+  showLock();
+}
+
+function showApp(): void {
+  lockView.classList.add("hidden");
+  listView.classList.remove("hidden");
+}
+
 function showList(): void {
   formView.classList.add("hidden");
   importView.classList.add("hidden");
@@ -58,6 +121,26 @@ function showImport(): void {
   formView.classList.add("hidden");
   importView.classList.remove("hidden");
   resetImportView();
+}
+
+function showSettings(): void {
+  listView.classList.add("hidden");
+  formView.classList.add("hidden");
+  importView.classList.add("hidden");
+  settingsView.classList.remove("hidden");
+  requireEl("changePwMsg").classList.add("hidden");
+}
+
+// ===== Ticker =====
+function startTicker(): void {
+  if (ticker) return;
+  ticker = setInterval(() => void refreshCodes(), 1000);
+}
+function stopTicker(): void {
+  if (ticker) {
+    clearInterval(ticker);
+    ticker = null;
+  }
 }
 
 // ===== List rendering =====
@@ -149,7 +232,7 @@ async function copyCode(id: string): Promise<void> {
 async function deleteAccount(id: string): Promise<void> {
   if (!confirm("Delete this account?")) return;
   accounts = accounts.filter((a) => a.id !== id);
-  await saveAccounts(accounts);
+  await vault.saveEncrypted(accounts);
   renderList();
   void refreshCodes();
 }
@@ -162,6 +245,15 @@ function showError(msg: string): void {
 }
 function hideError(): void {
   requireEl("formError").classList.add("hidden");
+}
+
+function hideLockError(): void {
+  lockError.classList.add("hidden");
+  lockError.textContent = "";
+}
+function showLockError(msg: string): void {
+  lockError.textContent = msg;
+  lockError.classList.remove("hidden");
 }
 
 function setupFormHandlers(): void {
@@ -203,7 +295,7 @@ function setupFormHandlers(): void {
     }
 
     const account: Account = {
-      id: editingId ?? uid(),
+      id: editingId ?? vault.uid(),
       issuer,
       label,
       secret: secret.toUpperCase(),
@@ -218,7 +310,7 @@ function setupFormHandlers(): void {
     } else {
       accounts.push(account);
     }
-    await saveAccounts(accounts);
+    await vault.saveEncrypted(accounts);
     editingId = null;
     showList();
     void refreshCodes();
@@ -328,12 +420,119 @@ function setupImportHandlers(): void {
 
   confirmImportBtn.addEventListener("click", async () => {
     confirmImportBtn.disabled = true;
-    await addAccounts(pendingImport);
-    accounts = await loadAccounts();
+    await vault.addAccounts(pendingImport);
+    accounts = await vault.loadDecrypted();
     confirmImportBtn.disabled = false;
     showList();
     void refreshCodes();
   });
+}
+
+// ===== Vault (lock/setup/change-pw/reset) handlers =====
+function setupVaultHandlers(): void {
+  lockSubmitBtn.addEventListener("click", async () => {
+    hideLockError();
+    const pw = lockPassword.value;
+    if (!pw) {
+      showLockError("Enter a password.");
+      return;
+    }
+    if (lockMode === "setup") {
+      if (pw.length < 4) {
+        showLockError("Password must be at least 4 characters.");
+        return;
+      }
+      if (pw !== lockPasswordConfirm.value) {
+        showLockError("Passwords don't match.");
+        return;
+      }
+      try {
+        await vault.setup(pw);
+      } catch (e) {
+        showLockError(e instanceof Error ? e.message : String(e));
+        return;
+      }
+      await enterApp();
+    } else {
+      let ok: boolean;
+      try {
+        ok = await vault.unlock(pw);
+      } catch (e) {
+        showLockError(e instanceof Error ? e.message : String(e));
+        return;
+      }
+      if (!ok) {
+        showLockError("Wrong password.");
+        lockPassword.value = "";
+        lockPassword.focus();
+        return;
+      }
+      await enterApp();
+    }
+  });
+
+  lockPassword.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") lockSubmitBtn.click();
+  });
+  lockPasswordConfirm.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") lockSubmitBtn.click();
+  });
+
+  lockResetBtn.addEventListener("click", () => void triggerWipe());
+
+  // Lock-now button in topbar
+  requireEl<HTMLButtonElement>("lockBtn").addEventListener("click", () => void triggerLock());
+
+  // Settings handlers
+  requireEl<HTMLButtonElement>("settingsBtn").addEventListener("click", () => showSettings());
+  requireEl<HTMLButtonElement>("settingsBackBtn").addEventListener("click", () => showList());
+  requireEl<HTMLButtonElement>("settingsLockBtn").addEventListener("click", () => void triggerLock());
+  requireEl<HTMLButtonElement>("settingsWipeBtn").addEventListener("click", () => void triggerWipe());
+
+  // Change password (in settings view)
+  requireEl<HTMLButtonElement>("changePwBtn").addEventListener("click", async () => {
+    const oldPw = requireEl<HTMLInputElement>("changeOldPw").value;
+    const newPw = requireEl<HTMLInputElement>("changeNewPw").value;
+    const msgEl = requireEl("changePwMsg");
+    if (!oldPw || !newPw) {
+      msgEl.textContent = "Fill in both fields.";
+      msgEl.classList.remove("hidden");
+      return;
+    }
+    if (newPw.length < 4) {
+      msgEl.textContent = "New password must be at least 4 characters.";
+      msgEl.classList.remove("hidden");
+      return;
+    }
+    const ok = await vault.changePassword(oldPw, newPw);
+    if (!ok) {
+      msgEl.textContent = "Current password is incorrect.";
+      msgEl.classList.remove("hidden");
+      return;
+    }
+    msgEl.textContent = "Password updated.";
+    msgEl.classList.remove("hidden");
+    requireEl<HTMLInputElement>("changeOldPw").value = "";
+    requireEl<HTMLInputElement>("changeNewPw").value = "";
+  });
+}
+
+async function triggerLock(): Promise<void> {
+  await vault.lockNow();
+  accounts = [];
+  stopTicker();
+  showLockForUnlock();
+}
+
+async function triggerWipe(): Promise<void> {
+  if (!confirm("This permanently deletes ALL accounts and the master password. Continue?")) {
+    return;
+  }
+  if (!confirm("Are you absolutely sure? This cannot be undone.")) return;
+  await vault.wipe();
+  accounts = [];
+  stopTicker();
+  showLockForSetup(0);
 }
 
 // ===== Navigation =====
@@ -345,17 +544,29 @@ function setupNavHandlers(): void {
   requireEl<HTMLButtonElement>("importBackBtn").addEventListener("click", () => showList());
 }
 
-// ===== Init =====
+// ===== Boot =====
+async function enterApp(): Promise<void> {
+  accounts = await vault.loadDecrypted();
+  showApp();
+  showList();
+  await refreshCodes();
+  startTicker();
+}
+
 (async function init(): Promise<void> {
   setupFormHandlers();
   setupImportHandlers();
+  setupVaultHandlers();
   setupNavHandlers();
 
-  accounts = await loadAccounts();
-  showList();
-  await refreshCodes();
-  ticker = setInterval(() => void refreshCodes(), 1000);
+  if (!(await vault.isConfigured())) {
+    const migrating = await vault.countPlaintextAccounts();
+    showLockForSetup(migrating);
+    return;
+  }
+  if (!(await vault.isUnlocked())) {
+    showLockForUnlock();
+    return;
+  }
+  await enterApp();
 })();
-
-// Keep TypeScript happy about the unused-ticker lint in case of HMR-like reloads.
-void ticker;

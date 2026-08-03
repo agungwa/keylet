@@ -20,6 +20,84 @@ body {
   display: none !important;
 }
 
+.muted {
+  font-size: 11px;
+  color: #7f849c;
+}
+
+/* Lock / setup / change-password card */
+.lock-card {
+  padding: 28px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  text-align: center;
+}
+
+.lock-icon {
+  font-size: 32px;
+  margin-bottom: 2px;
+}
+
+.lock-card h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #cdd6f4;
+}
+
+.lock-card input {
+  background: #313244;
+  border: 1px solid #45475a;
+  border-radius: 6px;
+  color: #cdd6f4;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+}
+
+.lock-card input:focus {
+  outline: none;
+  border-color: #89b4fa;
+}
+
+.lock-card .primary-btn {
+  margin-top: 4px;
+}
+
+.lock-details {
+  margin-top: 14px;
+  border-top: 1px solid #313244;
+  padding-top: 12px;
+  text-align: left;
+}
+
+/* Settings view */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #313244;
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+}
+
+.settings-section.danger .ghost-btn {
+  color: #f38ba8;
+  border-color: #f38ba855;
+}
+
+.settings-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9399b2;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Top bar */
 .topbar {
   display: flex;

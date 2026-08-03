@@ -7,6 +7,48 @@
   padding: 32px 16px;
 }
 
+/* Lock prompt shown when vault is configured but locked */
+.scan-lock {
+  width: 100%;
+  max-width: 380px;
+  margin: auto;
+}
+
+.scan-lock .lock-card {
+  padding: 40px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.scan-lock .lock-icon {
+  font-size: 40px;
+}
+
+.scan-lock h2 {
+  font-size: 18px;
+  color: #cdd6f4;
+}
+
+.scan-lock input {
+  background: #313244;
+  border: 1px solid #45475a;
+  border-radius: 6px;
+  color: #cdd6f4;
+  padding: 9px 11px;
+  font-size: 13px;
+}
+
+.scan-lock input:focus {
+  outline: none;
+  border-color: #89b4fa;
+}
+
+.scan-lock button {
+  margin-top: 4px;
+}
+
 .scan-wrap {
   width: 100%;
   max-width: 480px;
