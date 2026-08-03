@@ -16,12 +16,25 @@ A minimal, privacy-first TOTP (time-based one-time password) authenticator for G
 
 ## Install (developer mode)
 
-1. Open `chrome://extensions`
-2. Toggle **Developer mode** (top right)
-3. Click **Load unpacked**
-4. Select this folder
+1. `npm install`
+2. `npm run build`
+3. Open `chrome://extensions`
+4. Toggle **Developer mode** (top right)
+5. Click **Load unpacked**
+6. Select the **`dist/`** folder
 
 Pin the Keylet icon to your toolbar, click it, then **+** to add your first account.
+
+## Development
+
+| Command | Purpose |
+|---|---|
+| `npm run watch` | Rebuild JS bundles on save (asset edits still need a re-run) |
+| `npm run typecheck` | Type-check `src/` without emitting |
+| `npm run build` | Production build into `dist/` |
+| `npm run clean` | Remove `dist/` |
+
+Load `dist/` (not the repo root) as the unpacked extension.
 
 ## Add an account
 
@@ -43,16 +56,30 @@ Click **Parse**, then **Save**.
 
 ```
 .
-├── manifest.json   # MV3 manifest
-├── shared.js       # Shared logic: TOTP, base32, otpauth + GA-migration parsers
-├── popup.html      # Popup UI (list + add/edit + import)
-├── popup.css       # Styles
-├── popup.js        # Popup logic
-├── scan.html       # Camera-scan page (opened in a tab)
-├── scan.css        # Scan-page styles
-├── scan.js         # Camera + QR decode + import flow
-└── icons/          # Extension icons (16/32/48/128)
+├── src/                # TypeScript source
+│   ├── types.ts        # Shared types (Account, NewAccount, ParseResult)
+│   ├── storage.ts      # chrome.storage.local + dedupe-on-import
+│   ├── base32.ts       # RFC 4648 base32 codec
+│   ├── totp.ts         # TOTP (RFC 6238) via Web Crypto
+│   ├── otpauth.ts      # Single otpauth:// parser
+│   ├── migration.ts    # Google Authenticator otpauth-migration:// protobuf decoder
+│   ├── otp-uri.ts      # Dispatcher: any otpauth* URI → accounts
+│   ├── qr.ts           # BarcodeDetector wrapper for image QRs
+│   ├── dom.ts          # Small DOM helpers
+│   └── entries/
+│       ├── popup.ts    # Popup UI (list + add/edit + import)
+│       └── scan.ts     # Camera scan page (opened in a tab)
+├── public/             # Copied verbatim into dist/ at build time
+│   ├── manifest.json
+│   ├── popup.html / popup.css
+│   ├── scan.html / scan.css
+│   └── icons/
+├── build.mjs           # esbuild bundler + asset copy
+├── tsconfig.json       # strict TS config
+└── package.json
 ```
+
+The extension is loaded from `dist/` (built from `src/` + `public/`).
 
 ## Privacy
 

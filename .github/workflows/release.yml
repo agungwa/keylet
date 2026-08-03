@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version tag (e.g. v1.0.0) — must match manifest.json"
+        description: "Version tag (e.g. v1.1.0) — must match manifest.json"
         required: true
 
 permissions:
@@ -20,6 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Resolve version
         id: ver
         run: |
@@ -31,23 +40,23 @@ jobs:
 
       - name: Verify manifest version matches tag
         run: |
-          MANIFEST_V=$(node -p "require('./manifest.json').version")
+          MANIFEST_V=$(node -p "require('./public/manifest.json').version")
           TAG_V="${{ steps.ver.outputs.tag }}"
           TAG_V="${TAG_V#v}"  # strip leading 'v'
           echo "manifest=$MANIFEST_V  tag=$TAG_V"
           if [ "$MANIFEST_V" != "$TAG_V" ]; then
-            echo "::error::manifest.json version ($MANIFEST_V) does not match tag ($TAG_V)"
+            echo "::error::public/manifest.json version ($MANIFEST_V) does not match tag ($TAG_V)"
             exit 1
           fi
 
-      - name: Build extension zip
+      - name: Build
+        run: npm run build
+
+      - name: Package extension zip
         run: |
-          zip -r "keylet-${{ steps.ver.outputs.tag }}.zip" . \
-            -x "*.git*" \
-            -x "*.github*" \
-            -x "*.DS_Store" \
-            -x ".gitignore" \
-            -x "*.zip"
+          cd dist
+          zip -r "../keylet-${{ steps.ver.outputs.tag }}.zip" . \
+            -x "*.DS_Store"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
